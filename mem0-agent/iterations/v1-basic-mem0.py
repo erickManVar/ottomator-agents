@@ -1,4 +1,5 @@
 from dotenv import load_dotenv
+import os
 from openai import OpenAI
 from mem0 import Memory
 
@@ -7,14 +8,19 @@ load_dotenv()
 
 config = {
     "llm": {
-        "provider": "openai",
+        "provider": "openai",  # We keep this as OpenAI since we're using their SDK
         "config": {
-            "model": "gpt-4o-mini"
+            "model": "deepseek-chat",
+            "base_url": "https://api.deepseek.com/v1"  # DeepSeek API endpoint
         }
     }
 }
 
-openai_client = OpenAI()
+# Initialize OpenAI client with DeepSeek configuration
+client = OpenAI(
+    api_key=os.getenv("DEEPSEEK_API_KEY"),
+    base_url="https://api.deepseek.com/v1"
+)
 memory = Memory.from_config(config)
 
 def chat_with_memories(message: str, user_id: str = "default_user") -> str:
@@ -25,7 +31,12 @@ def chat_with_memories(message: str, user_id: str = "default_user") -> str:
     # Generate Assistant response
     system_prompt = f"You are a helpful AI. Answer the question based on query and memories.\nUser Memories:\n{memories_str}"
     messages = [{"role": "system", "content": system_prompt}, {"role": "user", "content": message}]
-    response = openai_client.chat.completions.create(model="gpt-4o-mini", messages=messages)
+    
+    response = client.chat.completions.create(
+        model="deepseek-chat",
+        messages=messages,
+        stream=False
+    )
     assistant_response = response.choices[0].message.content
 
     # Create new memories from the conversation
